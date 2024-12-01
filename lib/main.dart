@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:paymeapp/pages/payment_page.dart'; // Import de la page de paiement
+import 'pages/payment_page.dart';
 
 void main() {
   runApp(const MyApp());
