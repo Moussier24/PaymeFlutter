@@ -131,15 +131,61 @@ class _PaymentPageState extends State<PaymentPage> {
 
 /// Widget qui affiche la page de paiement dans une WebView
 /// Utilisé dans un modal bottom sheet
-class PaymentWebView extends StatelessWidget {
+class PaymentWebView extends StatefulWidget {
   final String paymentLink;
 
   const PaymentWebView({super.key, required this.paymentLink});
 
   @override
+  State<PaymentWebView> createState() => _PaymentWebViewState();
+}
+
+class _PaymentWebViewState extends State<PaymentWebView> {
+  late final WebViewController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialisation du contrôleur WebView
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..loadRequest(Uri.parse(widget.paymentLink))
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onNavigationRequest: (NavigationRequest request) {
+            // Vérifie si l'URL correspond à une URL de retour
+            if (request.url.contains('success')) {
+              // Ferme le modal et affiche le message de succès
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Paiement effectué avec succès !'),
+                  backgroundColor: Colors.green,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+              return NavigationDecision.prevent;
+            } else if (request.url.contains('cancel')) {
+              // Ferme le modal et affiche le message d'échec
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Paiement annulé ou échoué'),
+                  backgroundColor: Colors.red,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
+        ),
+      );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
-      // Hauteur du modal fixée à 90% de l'écran
       height: MediaQuery.of(context).size.height * 0.9,
       decoration: const BoxDecoration(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -161,11 +207,7 @@ class PaymentWebView extends StatelessWidget {
           ),
           // WebView pour afficher la page de paiement
           Expanded(
-            child: WebViewWidget(
-              controller: WebViewController()
-                ..loadRequest(Uri.parse(paymentLink))
-                ..setJavaScriptMode(JavaScriptMode.unrestricted),
-            ),
+            child: WebViewWidget(controller: _controller),
           ),
         ],
       ),
